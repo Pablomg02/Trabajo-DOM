@@ -1,0 +1,14 @@
+{
+  "segments": [
+    { "length": 500, "radius": 1e12 },  
+    { "length": 30, "radius": 20 },    
+    { "length": 20, "radius": 10 },    
+    { "length": 100, "radius": 1e12 },  
+    { "length": 50, "radius": 50 },    
+    { "length": 50, "radius": 1e12 },   
+    { "length": 30, "radius": 15 },    
+    { "length": 20, "radius": 1e12 },    
+    { "length": 40, "radius": 40 },      
+    { "length": 100, "radius": 1e12 }     
+  ]
+}
