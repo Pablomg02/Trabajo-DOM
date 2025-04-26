@@ -32,6 +32,10 @@ class LapSimulator:
         self._backward()
         # Calculate lap time using trapezoidal integration
         return self._calculate_lap_time(), self.v
+    
+
+    def _v_max(self):
+        pass
 
     def _forward(self):
         # Ensure acceleration does not exceed engine and grip limits
@@ -43,8 +47,8 @@ class LapSimulator:
 
     def _backward(self):
         # Ensure deceleration does not exceed braking and grip limits
-        decel = abs(self.car.max_deceleration())
         for i in range(len(self.v) - 2, -1, -1):
+            decel = abs(self.car.max_deceleration(self.v[i+1]))
             v_allowed = np.sqrt(self.v[i+1]**2 + 2 * decel * self.delta_s)
             if v_allowed < self.v[i]:
                 self.v[i] = v_allowed

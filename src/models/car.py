@@ -1,11 +1,13 @@
 import json
+from .aero import Aero
+
 
 class Car:
     """
     Clase que representa un coche para la simulación de vueltas.
     Permite cargar sus parámetros desde un archivo JSON.
     """
-    def __init__(self, mass, tire_grip, power, brake_force):
+    def __init__(self, mass, tire_grip, power, brake_force, aero):
         """
         Inicializa el coche con los parámetros principales.
         :param mass: Masa del coche en kg
@@ -17,6 +19,8 @@ class Car:
         self.tire_grip = tire_grip
         self.power = power
         self.brake_force = brake_force
+        self.aero = aero
+        
 
     @classmethod
     def from_json(cls, file_path):
@@ -27,11 +31,22 @@ class Car:
         """
         with open(file_path, 'r') as f:
             data = json.load(f)
+
+        # Instanciar objeto Aero con parámetros del JSON
+        aero = Aero(
+            cl_alpha_front=data['cl_alpha_front'],
+            cl_alpha_rear=data['cl_alpha_rear'],
+            cd_alpha_front=data['cd_alpha_front'],
+            cd_alpha_rear=data['cd_alpha_rear'],
+            fw_area=data['fw_area'],
+            rw_area=data['rw_area']
+        )
         return cls(
             mass=data['mass'],
             tire_grip=data['tire_grip'],
             power=data['power'],
-            brake_force=data['brake_force']
+            brake_force=data['brake_force'],
+            aero=aero
         )
 
     def max_acceleration(self, v):
@@ -41,18 +56,29 @@ class Car:
         :param v: Velocidad actual (m/s)
         :return: Aceleración máxima (m/s^2)
         """
-        grip_limit = self.tire_grip * 9.81 # Maxima aceleración que permiten los neumáticos
+        # Compute forces in Newtons
+        drag_force = self.aero.drag(v)
+        grip_force = self.tire_grip * self.mass * 9.81  # Max traction force (N)
+        # Power limit force: F = P / v, infinite at v=0 to allow initial acceleration
+        power_force = self.power / v if v > 0 else float('inf')  # (N)
+        # Available force limited by grip and power
+        F_available = min(grip_force, power_force)
+        # Net force after overcoming drag
+        net_force = F_available - drag_force
+        # Acceleration = net force / mass
+        acc = net_force / self.mass
+        # Do not allow negative acceleration (no engine-based braking here)
+        return max(acc, 0.0)
 
-        power_limit = self.power / (self.mass * v) if v > 0 else float('inf')  # Aceleración por potencia
-
-        return min(grip_limit, power_limit)
-
-    def max_deceleration(self):
+    def max_deceleration(self, v):
         """
         Calcula la desaceleración máxima del coche (m/s^2, valor negativo).
-        Considera el límite por freno y por agarre.
+        Considera el límite por freno, agarre y downforce aerodinámico.
+        :param v: Velocidad actual (m/s)
         :return: Desaceleración máxima (m/s^2, valor negativo)
         """
-        grip_limit = self.tire_grip * 9.81
+        downforce = self.aero.downforce(v)
+        grip_limit = self.tire_grip * (self.mass * 9.81 + downforce) / self.mass
         brake_limit = self.brake_force / self.mass
+
         return -min(grip_limit, brake_limit)

@@ -2,5 +2,11 @@
   "mass": 850,
   "tire_grip": 1.2,
   "power": 450000,
-  "brake_force": 15000
+  "brake_force": 15000,
+  "cl_alpha_front": 0.7,
+  "cl_alpha_rear": 0.6,
+  "cd_alpha_front": 0.2,
+  "cd_alpha_rear": 0.3,
+  "fw_area": 1,
+  "rw_area": 1
 }
