@@ -36,6 +36,8 @@ class Aero:
         self.rho = 1.225  # Densidad del aire (kg/m^3) a nivel del mar y 15°C
 
 
+
+
     def set_aoa(self, aoa):
         """
         Establece el ángulo de ataque del coche.
