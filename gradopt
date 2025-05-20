@@ -1,0 +1,112 @@
+import json
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+
+# Importar el LapSimulator y modelos 
+from src.models.car import Car
+from src.models.track import Track
+from src.simulator.lap_simulator import LapSimulator
+
+# CARGA DE PARÁMETROS DESDE JSON 
+base_path = os.path.dirname(__file__)
+car_path = os.path.join(base_path, "car.json")
+track_path = os.path.join(base_path, "track.json")
+
+car_data = json.load(open(car_path))
+track_data = json.load(open(track_path))
+
+# Definimos las funciones
+def simulate_lap(car_params): # Simula una vuelta con los parámetros del coche
+    car = Car.from_json(car_path) #parte de la configuración inicial del coche 
+    track = Track.from_json(track_path) #cargando los datos iniciale s
+
+    # Actualizar parámetros del coche
+    for p, v in zip(params, car_params): #zip recorre los parametros en paralelo, tanto de params que es una lista con los nombres de los parametros y car_params que es un array con los valores de los parámetros actuales
+        if hasattr(car, p): #pregunta si el coche tiene el atributo p
+            setattr(car, p, v) #si lo tiene, se le asigna el valor v
+        else:
+            # Supongo que los parámetros aero están dentro de car.aero
+            setattr(car.aero, p, v) #si no lo tiene, se le asigna el valor v a la parte de aerodinámica del coche
+    
+    car.aero.set_aoa(car_data.get("aoa", -4))  # Ajuste del ángulo de ataque si es necesario
+
+    simulator = LapSimulator(car, track) #creamos el simulador de vuelta con los datos del coche y la pista
+    lap_time, _ = simulator.simulate_lap() #simulamos la vuelta y guardamos el tiempo de vuelta y el resto de datos que no nos interesan
+    return lap_time
+
+def compute_gradient(theta, epsilon=1e-4): 
+    grad = np.zeros_like(theta) #aquí se van a guardar las derivadas parciales
+    for i in range(len(theta)): #inicial un bucle para cada parámetro
+        theta_plus = theta.copy() #crea el vector de incremento 
+        theta_minus = theta.copy()
+        # Perturba el parámetro i-ésimo para luego usarla para diferencias centrales 
+        theta_plus[i] += epsilon #se perturba el parámetro i-ésimo
+        theta_minus[i] -= epsilon
+
+        f_plus = simulate_lap(theta_plus) #simula la vuelta con el parámetro perturbado
+        f_minus = simulate_lap(theta_minus)
+
+        grad[i] = (f_plus - f_minus) / (2 * epsilon) #la formula de diferencias finitas centrales
+    return grad
+
+#Definimos los parametros a optimizar 
+params = ["power", "brake_force", "mass", "tire_grip", 
+          "cl_alpha_front", "cl_alpha_rear", "cd_alpha_front", 
+          "cd_alpha_rear", "fw_area", "rw_area"]
+
+theta = np.array([car_data.get(p, 1) for p in params]) #theta guarda los valores iniciales de los parametros 
+
+limits = np.array([ #son los limites de cada parametro 
+    [300000, 650000],
+    [3000, 10000],
+    [600, 900],
+    [0.1, 2],
+    [0.1, 1],
+    [0.1, 1],
+    [0.1, 1],
+    [0.1, 1],
+    [0.1, 2],
+    [0.1, 2]
+])
+
+learning_rate = 0.1 #magnitud del paso en cada iteracion, cuánto cambia los parametros por cada iteracion
+max_iters = 100 #el número máximo de iteraciones
+tolerance = 1e-3 #la tolerancia 
+
+lap_times = [] #se almacenan los tiempos de vuelta en cada iteracion
+theta_history = [theta.copy()] #se guarda el valor de theta en cada iteracion (se guarda el valor de los parametros en cada iteracion)
+
+#la parte de optimización 
+for iteration in range(max_iters): #por cada iteración dentro del número máximo de iteraciones
+    lap_time = simulate_lap(theta) #simula la vuelta con los parámetros actuales
+    lap_times.append(lap_time) #se guarda el tiempo de vuelta calculado anteriormente 
+
+    grad = compute_gradient(theta)
+    theta_new = theta - learning_rate * grad #se calcula el nuevo valor de theta restando el gradiente multiplicado por la tasa de aprendizaje, que justamente es la formula de actualización
+
+    # Aplicar restricciones automáticamente
+    theta_new = np.clip(theta_new, limits[:, 0], limits[:, 1])
+
+    if np.linalg.norm(theta_new - theta) < tolerance: #se está dentro de la tolerancia, se detiene la optimización
+        break
+
+    theta = theta_new #se actualiza el valor de theta
+    theta_history.append(theta.copy()) #se guarda el nuevo valor de theta
+
+optimized_params = dict(zip(params, theta)) #se guardan los valores en un diccionario
+final_lap_time = lap_times[-1] #accede al útlimo valor de la lista que debería ser el óptimo 
+
+
+print("\n Parámetros optimizados:")
+for p, v in optimized_params.items():
+    print(f"  {p}: {v:.4f}")
+print(f"\n  Tiempo de vuelta optimizado: {final_lap_time:.4f} segundos")
+
+
+plt.plot(lap_times, marker='o')
+plt.xlabel("Iteraciones")
+plt.ylabel("Tiempo de vuelta (s)")
+plt.title("Convergencia de Optimización con LapSimulator")
+plt.grid(True)
+plt.show()
