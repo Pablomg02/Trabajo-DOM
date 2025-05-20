@@ -7,22 +7,25 @@ class Car:
     Clase que representa un coche para la simulación de vueltas.
     Permite cargar sus parámetros desde un archivo JSON.
     """
-    def __init__(self, mass, tire_grip, power, brake_force, aero):
+    def __init__(self, mass, tire_grip, power, brake_force, aero, brake_bias, wheelbase, h_cg):
         """
         Inicializa el coche con los parámetros principales.
         :param mass: Masa del coche en kg
         :param tire_grip: Coeficiente de agarre de los neumáticos
         :param power: Potencia máxima (W)
         :param brake_force: Fuerza máxima de frenado (N)
+        :param brake_bias: Reparto de frenada (proporción al eje delantero, 0-1)
+        :param wheelbase: Distancia entre ejes (m)
+        :param h_cg: Altura del centro de gravedad (m)
         """
         self.mass = mass
         self.tire_grip = tire_grip
         self.power = power
         self.brake_force = brake_force
-
-
         self.aero = aero
-        
+        self.brake_bias = brake_bias  # 0.6 = 60% delante, 40% detrás
+        self.wheelbase = wheelbase
+        self.h_cg = h_cg
 
     def max_acceleration(self, v):
         """
@@ -48,16 +51,49 @@ class Car:
     def max_deceleration(self, v):
         """
         Calcula la desaceleración máxima del coche (m/s^2, valor negativo).
-        Considera el límite por freno, agarre y downforce aerodinámico.
+        Considera el límite por freno, agarre, downforce aerodinámico y reparto de frenada.
+        Se asegura de que en ningún eje se supere el agarre admitido.
         :param v: Velocidad actual (m/s)
         :return: Desaceleración máxima (m/s^2, valor negativo)
         """
+        g = 9.81
         downforce = self.aero.downforce(v)
-        grip_limit = self.tire_grip * (self.mass * 9.81 + downforce) / self.mass
-        brake_limit = self.brake_force / self.mass
+        total_weight = self.mass * g + downforce
 
-        return -min(grip_limit, brake_limit)
-    
+        # Límite de frenada del sistema
+        a_system = self.brake_force / self.mass
+        # Inicializar desaceleración con límite de sistema
+        a = a_system
+
+        # Iterar para ajustar transferencia de carga y distribución de frenada
+        for _ in range(10):
+            # Transferencia de peso durante la frenada
+            delta_w = self.mass * a * self.h_cg / self.wheelbase
+            w_front = total_weight * 0.5 + delta_w
+            w_rear = total_weight * 0.5 - delta_w
+
+            # Límite de agarre en cada eje
+            grip_front = self.tire_grip * w_front
+            grip_rear = self.tire_grip * w_rear
+
+            # Evitar divisiones por cero en bias
+            bias_f = self.brake_bias if self.brake_bias > 0 else 1e-3
+            bias_r = (1 - self.brake_bias) if (1 - self.brake_bias) > 0 else 1e-3
+
+            # Desaceleraciones máximas permitidas por agarre en cada eje con distribución de frenada
+            a_front_limit = grip_front / (self.mass * bias_f)
+            a_rear_limit = grip_rear / (self.mass * bias_r)
+
+            # Tomar el menor entre límite del sistema y de cada eje
+            a_allowed = min(a_system, a_front_limit, a_rear_limit)
+            # Comprobar convergencia
+            if abs(a_allowed - a) < 1e-3:
+                a = a_allowed
+                break
+            a = a_allowed
+
+        # Retornar desaceleración negativa
+        return -a
 
     def max_velocity(self, radius, v):
         """
@@ -73,10 +109,6 @@ class Car:
         # v^2 = F * r / m
         vmax = (grip_force * radius / self.mass) ** 0.5
         return vmax
-
-
-
-
 
     @classmethod
     def from_json(cls, file_path):
@@ -102,5 +134,8 @@ class Car:
             tire_grip=data['tire_grip'],
             power=data['power'],
             brake_force=data['brake_force'],
-            aero=aero
+            aero=aero,
+            brake_bias=data.get('brake_bias', 0.6),
+            wheelbase=data.get('wheelbase', 3.0),
+            h_cg=data.get('h_cg', 0.3)
         )

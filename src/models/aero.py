@@ -58,7 +58,7 @@ class Aero:
             self.cl_front = self.cl_alpha_front * (15 - 0.3 * (aoa - 15)) # Entrada en perdida
         else:
             self.cl_front = self.cl_alpha_front * aoa
-        self.cd_front = self.cd_alpha_front * aoa
+        self.cd_front = self.cd_alpha_front * aoa + (self.cd_alpha_front*0.3) * aoa**2
 
     @property
     def aoa_rear(self):
@@ -80,7 +80,7 @@ class Aero:
             self.cl_rear = self.cl_alpha_rear * (15 - 0.3 * (aoa - 15)) # Entrada en perdida
         else:
             self.cl_rear = self.cl_alpha_rear * aoa
-        self.cd_rear = self.cd_alpha_rear * aoa
+        self.cd_rear = self.cd_alpha_rear * aoa + (self.cd_alpha_rear*0.3) * aoa**2
 
         
     def downforce(self, v):

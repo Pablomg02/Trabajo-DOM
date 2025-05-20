@@ -1,14 +1,26 @@
 {
   "segments": [
-    { "length": 500, "radius": 1e12 },  
-    { "length": 150, "radius": 130 },    
-    { "length": 10, "radius": 10 },    
-    { "length": 100, "radius": 1e12 },  
-    { "length": 50, "radius": 50 },    
-    { "length": 50, "radius": 1e12 },   
-    { "length": 30, "radius": 15 },    
-    { "length": 20, "radius": 1e12 },    
-    { "length": 40, "radius": 40 },      
-    { "length": 100, "radius": 1e12 }     
+    { "length": 700, "radius": 1e12 },
+    { "length": 200, "radius": 120 },
+    { "length": 100, "radius": 300 },
+    { "length": 200, "radius": 1e12 },
+    { "length": 80, "radius": 25 },
+    { "length": 600, "radius": 1e12 },
+    { "length": 250, "radius": 400 },
+    { "length": 250, "radius": 1e12 },
+    { "length": 60, "radius": 45 },
+    { "length": 60, "radius": 80 },
+    { "length": 120, "radius": 1e12 },
+    { "length": 180, "radius": 90 },
+    { "length": 400, "radius": 80 },
+    { "length": 60, "radius": 20 },
+    { "length": 400, "radius": 1e12 },
+    { "length": 220, "radius": 150 },
+    { "length": 180, "radius": 1e12 },
+    { "length": 70, "radius": 40 },
+    { "length": 40, "radius": 70 },
+    { "length": 300, "radius": 1e12 },
+    { "length": 180, "radius": 180 },
+    { "length": 600, "radius": 1e12 }
   ]
 }
