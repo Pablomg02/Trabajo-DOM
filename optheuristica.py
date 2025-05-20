@@ -46,7 +46,7 @@ def fitness_function(X):
     car.aero.rw_area = rw_area
 
 
-    car.aero.set_aoa(-4)  # Ignorad esto de momento
+    # car.aero.set_aoa(-4)  # Ignorad esto de momento
     
     simulator = LapSimulator(car, track) 
     lap_time, v = simulator.simulate_lap()
