@@ -27,7 +27,9 @@ class Aero:
         self.fw_area = fw_area
         self.rw_area = rw_area
 
-        self.aoa = None
+        self._aoa_front = None
+        self._aoa_rear = None
+
         self.cl_front = None
         self.cl_rear = None
         self.cd_front = None
@@ -36,17 +38,48 @@ class Aero:
         self.rho = 1.225  # Densidad del aire (kg/m^3) a nivel del mar y 15°C
 
 
-
-
-    def set_aoa(self, aoa):
+    @property
+    def aoa_front(self):
+        """
+        Devuelve el ángulo de ataque del coche.
+        :return: Ángulo de ataque (rad)
+        """
+        return self._aoa_front
+    
+    @aoa_front.setter
+    def aoa_front(self, aoa):
         """
         Establece el ángulo de ataque del coche.
         :param aoa: Ángulo de ataque (rad)
         """
-        self.aoa = aoa
-        self.cl_front = self.cl_alpha_front * aoa
-        self.cl_rear = self.cl_alpha_rear * aoa
+        self._aoa_front = aoa
+
+        if aoa > 15:
+            self.cl_front = self.cl_alpha_front * (15 - 0.3 * (aoa - 15)) # Entrada en perdida
+        else:
+            self.cl_front = self.cl_alpha_front * aoa
         self.cd_front = self.cd_alpha_front * aoa
+
+    @property
+    def aoa_rear(self):
+        """
+        Devuelve el ángulo de ataque del coche.
+        :return: Ángulo de ataque (rad)
+        """
+        return self._aoa_rear
+    
+    @aoa_rear.setter
+    def aoa_rear(self, aoa):
+        """
+        Establece el ángulo de ataque del coche.
+        :param aoa: Ángulo de ataque (rad)
+        """
+        self._aoa_rear = aoa
+
+        if aoa > 15:
+            self.cl_rear = self.cl_alpha_rear * (15 - 0.3 * (aoa - 15)) # Entrada en perdida
+        else:
+            self.cl_rear = self.cl_alpha_rear * aoa
         self.cd_rear = self.cd_alpha_rear * aoa
 
         

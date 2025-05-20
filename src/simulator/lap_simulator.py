@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 class LapSimulator:
     """
@@ -21,7 +22,7 @@ class LapSimulator:
         self.radii = self._discretize()
         # Compute max speed due to lateral grip at each point
         radii_arr = np.array(self.radii, dtype=float)
-        self.v_max = np.sqrt(self.car.tire_grip * 9.81 * radii_arr)
+        self.v_max = self._v_max()
         # Initialize speed profile with curvature limits
         self.v = self.v_max.copy()
         # Start from standstill
@@ -34,8 +35,45 @@ class LapSimulator:
         return self._calculate_lap_time(), self.v
     
 
+    def plot_lap(self, label : str | None = None):
+        """
+        Plots the speed profile of the lap.
+        """
+        _, v = self.simulate_lap()
+
+        if label is None:
+            plt.plot(v)
+        else:
+            plt.plot(v, label=label)
+        
+        plt.xlabel("Track Position (m)")
+        plt.ylabel("Speed (m/s)")
+        plt.grid()
+        plt.legend()
+
+    
+
     def _v_max(self):
-        pass
+        # Compute max speed at each point considering downforce (aero)
+        v_max = np.zeros(len(self.radii))
+        v_guess = 0.0  # Initial guess for the first point
+        VEL_MAX_LIMIT = 200.0  # Límite superior  para velocidad máxima (evitar NaN o inf)
+        for i, radius in enumerate(self.radii):
+            # Use previous step's v_max as initial guess for smoother convergence
+            if i > 0:
+                v_guess = v_max[i-1]
+            for _ in range(10):
+                v_new = self.car.max_velocity(radius, v_guess)
+                if not np.isfinite(v_new):
+                    v_new = VEL_MAX_LIMIT
+                if abs(v_new - v_guess) < 1e-3:
+                    break
+                v_guess = v_new
+            # Si la velocidad sigue siendo infinita o NaN, la limitamos
+            if not np.isfinite(v_guess):
+                v_guess = VEL_MAX_LIMIT
+            v_max[i] = v_guess
+        return v_max
 
     def _forward(self):
         # Ensure acceleration does not exceed engine and grip limits

@@ -1,8 +1,8 @@
 {
   "segments": [
     { "length": 500, "radius": 1e12 },  
-    { "length": 30, "radius": 20 },    
-    { "length": 20, "radius": 10 },    
+    { "length": 150, "radius": 130 },    
+    { "length": 10, "radius": 10 },    
     { "length": 100, "radius": 1e12 },  
     { "length": 50, "radius": 50 },    
     { "length": 50, "radius": 1e12 },   
